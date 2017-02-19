@@ -83,7 +83,7 @@ def detect_properties(path):
 def main(photo_file):
     """Run a label request on a single image"""
     detect_labels(photo_file)
-    print('\n')
+    print()
     detect_properties(photo_file)
 
     # # [START authenticate]
