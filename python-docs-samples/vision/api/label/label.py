@@ -29,38 +29,87 @@ Run the script on an image to get a label, E.g.:
 # [START import_libraries]
 import argparse
 import base64
+import io
+import os
+
+from google.cloud import vision
+
 
 import googleapiclient.discovery
 # [END import_libraries]
 
+def detect_labels(path):
+    """Detects labels in the file."""
+    vision_client = vision.Client()
+
+    with io.open(path, 'rb') as image_file:
+        content = image_file.read()
+
+    image = vision_client.image(content=content)
+
+    labels = image.detect_labels()
+
+    print('Labels:')
+    for label in labels:
+        print(label.description)
+
+
+def detect_properties(path):
+    """Detects image properties in the file."""
+    vision_client = vision.Client()
+
+    with io.open(path, 'rb') as image_file:
+        content = image_file.read()
+
+    image = vision_client.image(content=content)
+
+    properties = image.detect_properties()
+    print('Properties:')
+    avg_red = 0
+    avg_green = 0
+    avg_blue = 0
+    for prop in properties:
+        for color in prop.colors:
+            # color.pixel_fraction
+            print('fraction: {}'.format(color.score))
+            print('r: {}'.format(color.color.red))
+            print('g: {}'.format(color.color.green))
+            print('b: {}'.format(color.color.blue))
+            avg_red += color.color.red * color.score
+            avg_green += color.color.green * color.score
+            avg_blue += color.color.blue * color.score
+    print(round(avg_red), round(avg_green), round(avg_blue))
 
 def main(photo_file):
     """Run a label request on a single image"""
+    detect_labels(photo_file)
+    print('\n')
+    detect_properties(photo_file)
 
-    # [START authenticate]
-    service = googleapiclient.discovery.build('vision', 'v1')
-    # [END authenticate]
+    # # [START authenticate]
+    # service = googleapiclient.discovery.build('vision', 'v1')
+    # # [END authenticate]
 
-    # [START construct_request]
-    with open(photo_file, 'rb') as image:
-        image_content = base64.b64encode(image.read())
-        service_request = service.images().annotate(body={
-            'requests': [{
-                'image': {
-                    'content': image_content.decode('UTF-8')
-                },
-                'features': [{
-                    'type': 'LABEL_DETECTION',
-                    'maxResults': 1
-                }]
-            }]
-        })
-        # [END construct_request]
-        # [START parse_response]
-        response = service_request.execute()
-        label = response['responses'][0]['labelAnnotations'][0]['description']
-        print('Found label: %s for %s' % (label, photo_file))
-        # [END parse_response]
+    # # [START construct_request]
+    # with open(photo_file, 'rb') as image:
+    #     image_content = base64.b64encode(image.read())
+    #     service_request = service.images().annotate(body={
+    #         'requests': [{
+    #             'image': {
+    #                 'content': image_content.decode('UTF-8')
+    #             },
+    #             'features': [{
+    #                 'type': 'LABEL_DETECTION',
+    #                 'maxResults': 1
+    #             }]
+    #         }]
+    #     })
+    #     # [END construct_request]
+    #     # [START parse_response]
+    #     response = service_request.execute()
+    #     label = response['responses'][0]['labelAnnotations'][0]['description']
+    #     print('Found label: %s for %s' % (label, photo_file))
+    #     # [END parse_response]
 
 
 # [START run_application]
